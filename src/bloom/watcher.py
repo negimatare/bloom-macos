@@ -122,10 +122,11 @@ def _domain() -> str:
 
 
 def agent_install() -> Path:
+    bloom_executable = _bloom_executable()
     agent_uninstall()  # replace any previous version
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    executable = write_helper_bundle(HELPER_BUNDLE, _bloom_executable())
+    executable = write_helper_bundle(HELPER_BUNDLE, bloom_executable)
     subprocess.run([LSREGISTER, "-f", str(HELPER_BUNDLE)], capture_output=True)
     plist = {
         "Label": LABEL,
