@@ -4,7 +4,7 @@ Each release of Bloom. To update a checkout, pull the release tag, run
 `uv sync`, then `uv run bloom app install` and `uv run bloom agent install`
 again.
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-11-25
 
 The first release. The keyboard app gets its own name, Bloom, and new
 Lighting, Keymap and Profiles screens.
