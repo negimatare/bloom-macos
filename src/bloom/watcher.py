@@ -11,7 +11,6 @@ from __future__ import annotations
 import logging
 import os
 import plistlib
-import shlex
 import shutil
 import subprocess
 import sys
@@ -20,7 +19,7 @@ from pathlib import Path
 
 import hid
 
-from . import APP_NAME, BUNDLE_ID, ICON_ICNS, config, keymap
+from . import APP_NAME, BUNDLE_ID, bundle, config, keymap
 from .device import PRODUCT_ID, VENDOR_ID
 
 log = logging.getLogger("bloom.watch")
@@ -32,9 +31,7 @@ LABEL = "com.bloom.watch"
 PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
 LOG_PATH = Path.home() / "Library" / "Logs" / "Bloom" / "watch.log"
 HELPER_BUNDLE = config.APP_DIR / f"{APP_NAME}.app"
-HELPER_EXECUTABLE = APP_NAME  # macOS lists a login item under its executable name
-LSREGISTER = ("/System/Library/Frameworks/CoreServices.framework/Frameworks/"
-              "LaunchServices.framework/Support/lsregister")
+HELPER_BUNDLE_ID = f"{BUNDLE_ID}.helper"
 
 
 def _connected_paths() -> frozenset[bytes]:
@@ -83,34 +80,9 @@ def watch() -> None:
 # ---- LaunchAgent (start at login) -------------------------------------------
 
 
-def _bloom_executable() -> str:
-    """The `bloom` script in this project's virtualenv."""
-    exe = Path(sys.executable).with_name("bloom")
-    if not exe.exists():
-        raise RuntimeError(f"cannot find bloom executable next to {sys.executable}")
-    return str(exe)
-
-
-def write_helper_bundle(bundle: Path, bloom_executable: str) -> Path:
-    """A minimal app around the watcher, so macOS lists the login item as Bloom, with its icon."""
-    contents = bundle / "Contents"
-    (contents / "MacOS").mkdir(parents=True, exist_ok=True)
-    (contents / "Resources").mkdir(parents=True, exist_ok=True)
-    info = {
-        "CFBundleName": APP_NAME,
-        "CFBundleDisplayName": APP_NAME,
-        "CFBundleIdentifier": BUNDLE_ID,
-        "CFBundleExecutable": HELPER_EXECUTABLE,
-        "CFBundleIconFile": ICON_ICNS.stem,
-        "CFBundlePackageType": "APPL",
-        "LSBackgroundOnly": True,
-    }
-    (contents / "Info.plist").write_bytes(plistlib.dumps(info))
-    shutil.copyfile(ICON_ICNS, contents / "Resources" / ICON_ICNS.name)
-    executable = contents / "MacOS" / HELPER_EXECUTABLE
-    executable.write_text(f"#!/bin/sh\nexec {shlex.quote(bloom_executable)} watch\n")
-    executable.chmod(0o755)
-    return executable
+def write_helper_bundle(path: Path, bloom_executable: str) -> Path:
+    command = bundle.quoted(bloom_executable, "watch")
+    return bundle.write_app_bundle(path, HELPER_BUNDLE_ID, command, background=True)
 
 
 def _launchctl(*args: str) -> subprocess.CompletedProcess:
@@ -122,12 +94,12 @@ def _domain() -> str:
 
 
 def agent_install() -> Path:
-    bloom_executable = _bloom_executable()
+    bloom_executable = bundle.venv_script("bloom")
     agent_uninstall()  # replace any previous version
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
     executable = write_helper_bundle(HELPER_BUNDLE, bloom_executable)
-    subprocess.run([LSREGISTER, "-f", str(HELPER_BUNDLE)], capture_output=True)
+    bundle.register(HELPER_BUNDLE)
     plist = {
         "Label": LABEL,
         "ProgramArguments": [str(executable)],
@@ -148,6 +120,7 @@ def agent_install() -> Path:
 def agent_uninstall() -> bool:
     """Stop the helper and remove it from login. True if it was installed."""
     _launchctl("bootout", f"{_domain()}/{LABEL}")
+    bundle.unregister(HELPER_BUNDLE)
     shutil.rmtree(HELPER_BUNDLE, ignore_errors=True)
     if PLIST_PATH.exists():
         PLIST_PATH.unlink()
