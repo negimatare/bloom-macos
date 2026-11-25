@@ -21,7 +21,7 @@ from .keycaps import FN_TOOLTIP, KeyboardGrid, function_text, key_title
 from .key_listener import KeyListener
 from .key_panel import KeyPanel
 from .remaps_list import RemapsList
-from .widgets import StatusLine, Toast, ToggleSwitch, card, label, text_block
+from .widgets import StatusLine, Toast, ToggleSwitch, card, count_text, label, text_block
 
 def _swatch(colour: str, border: str, text: str) -> QHBoxLayout:
     box = QLabel()
@@ -232,7 +232,7 @@ class KeymapStudio(QWidget):
         mappings = self.c.profile.mappings
         self.grid.show_mappings(mappings, self._selected, self._capturing)
         count = len(mappings)
-        self.badge.setText(f"{count} key{'s' if count != 1 else ''} remapped")
+        self.badge.setText(f"{count_text(count, 'key')} remapped")
         self.badge.setVisible(count > 0)
         self._show_panel()
         self.remaps.show_mappings(mappings, self.c.config.active_profile)

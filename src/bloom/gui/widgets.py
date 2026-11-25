@@ -31,6 +31,20 @@ def label(text: str = "", role: str | None = None) -> QLabel:
     return widget
 
 
+def count_text(count: int, noun: str) -> str:
+    """ "1 remap", "2 remaps" """
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
+def clear(layout) -> None:
+    """Remove and delete every widget in `layout`, hidden at once so none lingers on screen."""
+    while layout.count():
+        widget = layout.takeAt(0).widget()
+        if widget is not None:
+            widget.hide()
+            widget.deleteLater()
+
+
 def text_block(heading: str, detail: str, heading_role: str = "heading") -> QVBoxLayout:
     block = QVBoxLayout()
     block.setSpacing(2)
@@ -148,8 +162,7 @@ class Toast(QFrame):
         self._icon.setPixmap(icons.pixmap(name, colour))
         self._text.setText(text)
         self.setAccessibleName(re.sub(r"<[^>]+>", " ", text))
-        while self._actions.count():
-            self._actions.takeAt(0).widget().deleteLater()
+        clear(self._actions)
         for i, (caption, run) in enumerate(actions):
             button = QPushButton(caption)
             button.setCursor(Qt.PointingHandCursor)

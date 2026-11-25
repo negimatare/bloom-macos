@@ -42,6 +42,7 @@ QLabel[role="muted"] {{ color: {MUTED}; font-size: 12px; }}
 QLabel[role="badge"] {{
     background: {REMAPPED}; color: {ACCENT}; border-radius: 8px; padding: 5px 12px; font-size: 12px;
 }}
+QLabel[role="accent"] {{ color: {ACCENT}; }}
 QLabel[role="value"] {{ color: {ACCENT}; font-size: 18px; font-weight: 600; }}
 
 QPushButton {{
@@ -51,6 +52,9 @@ QPushButton {{
 QPushButton:hover {{ border-color: {MUTED}; }}
 QPushButton:disabled {{ color: {DISABLED}; border-color: {BORDER}; }}
 QPushButton[role="primary"] {{ background: {ACCENT}; color: {ON_ACCENT}; border: none; font-weight: 600; }}
+QPushButton[role="primary"]:disabled {{ background: {KEY}; color: {MUTED}; }}
+QFrame[role="card"] QPushButton[role="primary"] {{ background: {ACCENT}; }}
+QFrame[role="card"] QPushButton[role="primary"]:disabled {{ background: {KEY}; }}
 QPushButton[role="flat"] {{ background: transparent; border: none; color: {MUTED}; padding: 4px 6px; }}
 QPushButton[role="flat"]:hover {{ color: {TEXT}; }}
 QPushButton[role="flat"]:disabled {{ color: {DISABLED}; }}
@@ -85,10 +89,9 @@ QSlider::handle:horizontal {{
     background: #FFFFFF; width: 18px; height: 18px; margin: -6px 0; border-radius: 9px;
 }}
 
-QListWidget {{
-    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 8px; gridline-color: {BORDER};
-}}
-QListWidget::item:selected {{ background: {REMAPPED}; color: {ACCENT}; }}
+QProgressBar {{ background: {KEY}; border: none; border-radius: 3px; max-height: 6px; min-height: 6px; }}
+QProgressBar::chunk {{ background: {ACCENT}; border-radius: 3px; }}
+QDialog {{ background: {PANEL}; }}
 """
 
 

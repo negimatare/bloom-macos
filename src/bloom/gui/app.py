@@ -21,7 +21,7 @@ from . import icons, theme
 from .controller import Controller
 from .keymap_studio import KeymapStudio
 from .lighting_studio import LightingStudio
-from .profiles_tab import ProfilesTab
+from .profile_studio import ProfileStudio
 from .widgets import Toast, label, segmented
 
 APP_NAME = "Bloom"
@@ -65,7 +65,8 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.toast = Toast(central)
         self.pages = QStackedWidget()
-        for page in (LightingStudio(self.c), KeymapStudio(self.c, self.toast), ProfilesTab(self.c)):
+        for page in (LightingStudio(self.c), KeymapStudio(self.c, self.toast),
+                     ProfileStudio(self.c, self.toast)):
             self.pages.addWidget(page)
 
         layout = QVBoxLayout(central)

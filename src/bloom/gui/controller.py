@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtCore import QCoreApplication, QObject, QTimer, Signal
 
 from .. import config, device, keymap, layout, lighting, watcher
-from ..apply import apply_lighting, apply_mappings, apply_profile
+from ..apply import apply_mappings, apply_profile
 from ..config import Config, Profile
 from ..lighting import LightEffect
 
@@ -61,7 +63,7 @@ class Controller(QObject):
     def _run(self, action, success: str) -> bool:
         try:
             action()
-        except (device.DeviceError, keymap.KeymapError, KeyError, ValueError, RuntimeError) as exc:
+        except (device.DeviceError, keymap.KeymapError, KeyError, ValueError, RuntimeError, OSError) as exc:
             self._control_path = None  # re-probe next time
             self.error.emit(str(exc))
             return False
@@ -128,8 +130,9 @@ class Controller(QObject):
         if self.connected:
             self._run(lambda: apply_mappings(self.profile), "")
 
-    def _keep_undo(self) -> None:
-        self._undo = (self.config.active_profile, Profile.from_dict(self.profile.to_dict()))
+    def _keep_undo(self, name: str | None = None) -> None:
+        name = name or self.config.active_profile
+        self._undo = (name, self.config.profiles[name].copy())
         self._last_assignment = None
 
     def _set_mappings(self, mappings: list[keymap.Mapping]) -> None:
@@ -171,8 +174,6 @@ class Controller(QObject):
             return
         name, before = self._undo
         self._undo = self._last_assignment = None
-        if name not in self.config.profiles:
-            return
         self.config.profiles[name] = before
         self.save()
         if name == self.config.active_profile and self.connected:
@@ -202,60 +203,62 @@ class Controller(QObject):
         if not self.connected:
             self.message.emit(f"Profile '{name}' active. The keyboard isn't connected.")
             return
+        self._run(lambda: apply_profile(self.profile), f"Profile '{name}' applied")
 
-        def action():
-            apply_lighting(self.profile)
-            apply_mappings(self.profile)
+    def _profile_rule(self, rule) -> object | None:
+        """Run a `Config` rule; report a refused one and return None."""
+        try:
+            return rule()
+        except config.ProfileError as exc:
+            self.error.emit(str(exc))
+            return None
 
-        self._run(action, f"Profile '{name}' applied")
-
-    def _check_name(self, name: str) -> str:
-        name = name.strip()
-        if not name:
-            raise ValueError("profile name can't be empty")
-        if name in self.config.profiles:
-            raise ValueError(f"a profile called '{name}' already exists")
+    def new_profile(self, name: str, icon: str, copy_of: str | None = None) -> str | None:
+        name = self._profile_rule(lambda: self.config.create(name, copy_of))
+        if name is not None:
+            self.config.profiles[name].icon = icon
+            self.save()
         return name
 
-    def new_profile(self, name: str, copy_of: str | None = None) -> bool:
-        try:
-            name = self._check_name(name)
-        except ValueError as exc:
-            self.error.emit(str(exc))
-            return False
-        source = self.config.profiles.get(copy_of) if copy_of else None
-        self.config.profiles[name] = (
-            Profile.from_dict(source.to_dict()) if source else Profile()
-        )
-        self.save()
-        self.message.emit(f"Profile '{name}' created")
-        return True
-
-    def rename_profile(self, old: str, new: str) -> bool:
-        try:
-            new = self._check_name(new)
-        except ValueError as exc:
-            self.error.emit(str(exc))
-            return False
-        # Rebuild to keep the order of profiles.
-        self.config.profiles = {
-            (new if k == old else k): v for k, v in self.config.profiles.items()
-        }
-        if self.config.active_profile == old:
-            self.config.active_profile = new
-        self.save()
-        self.message.emit(f"Renamed to '{new}'")
-        return True
+    def edit_profile(self, old: str, new: str, icon: str) -> str | None:
+        name = self._profile_rule(lambda: self.config.rename(old, new))
+        if name is not None:
+            self.config.profiles[name].icon = icon
+            self.save()
+        return name
 
     def delete_profile(self, name: str) -> bool:
-        if len(self.config.profiles) <= 1:
-            self.error.emit("You need at least one profile")
-            return False
         was_active = name == self.config.active_profile
-        del self.config.profiles[name]
+        before = self.config.profiles[name].copy()
+        try:
+            self.config.delete(name)
+        except config.ProfileError as exc:
+            self.error.emit(str(exc))
+            return False
+        self._undo, self._last_assignment = (name, before), None
         if was_active:
-            self.activate(next(iter(self.config.profiles)))
+            self.activate(self.config.active_profile)
         else:
             self.save()
-        self.message.emit(f"Profile '{name}' deleted")
         return True
+
+    def restore_default(self, name: str) -> None:
+        self._keep_undo(name)
+        self.config.restore_default(name)
+        self.save()
+        if name == self.config.active_profile and self.connected:
+            self._run(lambda: apply_profile(self.profile), "")
+
+    def export_profile(self, name: str, path: str) -> bool:
+        return self._run(lambda: Path(path).write_text(self.config.export_profile(name)), "")
+
+    def import_profile(self, path: str) -> str | None:
+        try:
+            text = Path(path).read_text()
+        except (OSError, UnicodeDecodeError) as exc:
+            self.error.emit(f"This file can't be read: {exc}")
+            return None
+        name = self._profile_rule(lambda: self.config.import_profile(text))
+        if name is not None:
+            self.save()
+        return name

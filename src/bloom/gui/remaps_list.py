@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLay
 
 from . import icons, theme
 from .keycaps import function_text, key_title
-from .widgets import label, separator
+from .widgets import clear, count_text, label, separator
 
 
 class RemapsList(QFrame):
@@ -47,19 +47,13 @@ class RemapsList(QFrame):
         remaps_layout.addLayout(remaps_footer)
 
     def show_mappings(self, mappings: list[tuple[str, str]], profile: str) -> None:
-        while self.rows.count():
-            item = self.rows.takeAt(0)
-            if item.widget():
-                item.widget().hide()
-                item.widget().deleteLater()
+        clear(self.rows)
         for src, dst in mappings:
             row = QWidget()
             row_layout = QHBoxLayout(row)
             row_layout.setContentsMargins(0, 6, 0, 6)
             row_layout.addWidget(QLabel(key_title(src)), 1)
-            target = QLabel(f"→ {function_text(dst)}")
-            target.setStyleSheet(f"color: {theme.ACCENT};")
-            row_layout.addWidget(target)
+            row_layout.addWidget(label(f"→ {function_text(dst)}", "accent"))
             revert = QPushButton()
             revert.setProperty("role", "flat")
             revert.setIcon(icons.icon("rotate-ccw", theme.MUTED))
@@ -72,7 +66,7 @@ class RemapsList(QFrame):
         if not mappings:
             self.rows.addWidget(label("No remaps. Every key gives its own function.", "muted"))
         count = len(mappings)
-        self.count.setText(f"{count} remap{'s' if count != 1 else ''}")
+        self.count.setText(count_text(count, "remap"))
         self.profile_label.setText(f"Profile: {profile}")
         self.reset_button.setEnabled(count > 0)
         self._show_open(self.toggle.isChecked())
