@@ -2,7 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/negimatare/bloom-macos?style=flat-square&label=release&color=e6a0cd)](https://github.com/negimatare/bloom-macos/releases/latest)
 [![Licence](https://img.shields.io/github/license/negimatare/bloom-macos?style=flat-square&label=licence&color=c9a0dc)](LICENSE)
-[![Tests](https://img.shields.io/github/actions/workflow/status/negimatare/bloom-macos/tests.yml?branch=main&style=flat-square&label=tests)](https://github.com/negimatare/bloom-macos/actions/workflows/tests.yml)
+[![Unit tests](https://img.shields.io/github/actions/workflow/status/negimatare/bloom-macos/unit-tests.yml?branch=main&style=flat-square&label=unit%20tests)](https://github.com/negimatare/bloom-macos/actions/workflows/unit-tests.yml)
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/negimatare/bloom-macos/codeql.yml?branch=main&style=flat-square&label=CodeQL)](https://github.com/negimatare/bloom-macos/actions/workflows/codeql.yml)
 
 Make every key yours. Keyboard customisation for macOS.

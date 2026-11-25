@@ -41,8 +41,8 @@ check on a real Razer BlackWidow Lite.
   Without the cherry-pick, the next release removes the fix from `main`.
 
 A branch ruleset protects each branch. Each one requires a pull request with
-a squash merge, signed commits, linear history, and the `Tests` and
-`Analyze` checks. Each one also blocks force pushes and deletion. A tag
+a squash merge, signed commits, linear history, and the `Unit tests`
+and `Analyze` checks. Each one also blocks force pushes and deletion. A tag
 ruleset blocks a change to a `v*` tag, or its deletion.
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).

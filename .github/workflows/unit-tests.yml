@@ -1,5 +1,6 @@
-# Runs the test suite on macOS, the only platform that Bloom supports.
-name: Tests
+# Runs the unit tests on macOS, the only platform that Bloom supports. They use
+# fakes for the keyboard and hidutil, so they need no keyboard.
+name: Unit tests
 on:
   push:
   pull_request:
@@ -7,7 +8,7 @@ permissions:
   contents: read
 jobs:
   test:
-    name: Tests
+    name: Unit tests
     runs-on: macos-latest
     timeout-minutes: 15
     steps:
