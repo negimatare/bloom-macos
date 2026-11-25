@@ -19,11 +19,22 @@ uv run bloom map caps_lock escape
 uv run bloom agent install    # re-apply remaps at login and after a replug
 ```
 
-macOS asks for Input Monitoring permission the first time Bloom talks to the
-keyboard. Give it to the terminal that runs Bloom.
+## Install the app
 
-The helper runs `bloom` from this folder's `.venv`. Before you move or delete
-the folder, run `uv run bloom agent uninstall`.
+```sh
+uv run bloom app install      # adds "Bloom MacOS" to ~/Applications
+```
+
+Open Bloom MacOS from Launchpad or Spotlight, or drag it to the Dock. The app
+starts the window from this folder's `.venv`, so you do not need a terminal.
+To remove it, run `uv run bloom app uninstall`.
+
+macOS asks for Input Monitoring permission the first time Bloom talks to the
+keyboard. Give it to Bloom MacOS, or to the terminal that runs Bloom.
+
+The app and the helper run Bloom from this folder's `.venv`. Before you move
+or delete the folder, run `uv run bloom app uninstall` and
+`uv run bloom agent uninstall`.
 
 ## Test
 

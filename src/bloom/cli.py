@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import config, device, hid_usages, keymap, lighting, watcher
+from . import config, device, hid_usages, keymap, launcher, lighting, watcher
 from .apply import apply_profile
 from .lighting import LightEffect
 from .protocol import Status
@@ -150,6 +150,16 @@ def cmd_agent(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_app(args: argparse.Namespace) -> int:
+    if args.action == "install":
+        path = launcher.app_install()
+        print(f"Installed {path}. Open it from Launchpad, or drag it to the Dock.")
+    else:
+        removed = launcher.app_uninstall()
+        print("Removed the app." if removed else "Not installed.")
+    return 0
+
+
 def cmd_gui(_: argparse.Namespace) -> int:
     from .gui.app import main as gui_main
 
@@ -197,6 +207,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("watch", help="run the background helper in the foreground")
     p = sub.add_parser("agent", help="manage the background helper started at login")
     p.add_argument("action", choices=["install", "uninstall", "status"])
+    p = sub.add_parser("app", help="add or remove the Bloom app in ~/Applications")
+    p.add_argument("action", choices=["install", "uninstall"])
     return parser
 
 
@@ -215,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         "gui": cmd_gui,
         "watch": cmd_watch,
         "agent": cmd_agent,
+        "app": cmd_app,
     }
     try:
         return handlers[args.command](args)

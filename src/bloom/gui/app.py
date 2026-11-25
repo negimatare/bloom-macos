@@ -33,7 +33,7 @@ START_SCREEN = 0
 INPUT_MONITORING_SETTINGS = "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
 PERMISSION_TEXT = (
     "<b>macOS blocks the keyboard lighting</b><br>In Privacy &amp; Security → Input Monitoring, "
-    "switch on the app that opened Bloom (for example Terminal or Ghostty), then open Bloom again."
+    f"switch on {APP_NAME}, or the terminal that opened Bloom, then open Bloom again."
 )
 
 
