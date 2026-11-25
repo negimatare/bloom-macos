@@ -82,6 +82,7 @@ QComboBox QAbstractItemView {{
     selection-background-color: {REMAPPED}; selection-color: {ACCENT};
 }}
 
+QSlider:horizontal {{ min-height: 24px; }}  /* room for the 18px handle above and below the groove */
 QSlider::groove:horizontal {{ height: 6px; background: {KEY}; border-radius: 3px; }}
 QSlider::sub-page:horizontal {{ background: {ACCENT}; border-radius: 3px; }}
 QSlider::sub-page:horizontal:disabled {{ background: {DISABLED}; }}

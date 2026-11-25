@@ -1,0 +1,18 @@
+name: Idea
+description: A new feature, or a change to the lighting, keymap or profile screens.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What goes wrong or takes too long today, with an example.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What Bloom should do
+      description: The behaviour that you want.
+    validations:
+      required: true
