@@ -86,6 +86,20 @@ ALIASES = {
 
 _BY_USAGE = {usage: name for name, (usage, _) in _KEYS.items()}
 
+# Glyph or short text for the centre of a keycap, where the label is too long.
+_SHORT = {
+    "return": "↩", "escape": "Esc", "backspace": "⌫", "tab": "⇥", "space": "Space",
+    "minus": "-", "equal": "=", "left_bracket": "[", "right_bracket": "]",
+    "backslash": "\\", "non_us_pound": "#", "semicolon": ";", "quote": "'",
+    "grave": "`", "comma": ",", "period": ".", "slash": "/", "caps_lock": "⇪",
+    "print_screen": "PrtSc", "scroll_lock": "ScrLk", "pause": "Pause",
+    "insert": "Ins", "home": "Home", "page_up": "PgUp", "delete": "⌦", "end": "End",
+    "page_down": "PgDn", "right": "→", "left": "←", "down": "↓", "up": "↑",
+    "non_us_backslash": "§", "application": "Menu",
+    "left_control": "⌃", "left_shift": "⇧", "left_option": "⌥", "left_command": "⌘",
+    "right_control": "⌃", "right_shift": "⇧", "right_option": "⌥", "right_command": "⌘",
+}
+
 
 def names() -> list[str]:
     return list(_KEYS)
@@ -105,6 +119,11 @@ def usage(name: str) -> int:
 
 def label(name: str) -> str:
     return _KEYS[normalise(name)][1]
+
+
+def short_label(name: str) -> str:
+    key = normalise(name)
+    return _SHORT.get(key, _KEYS[key][1])
 
 
 def name_for_usage(usage_id: int) -> str | None:

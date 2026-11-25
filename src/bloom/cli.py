@@ -1,4 +1,4 @@
-"""Command-line interface: `bw <command>`."""
+"""Command-line interface: `bloom <command>`."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def cmd_experiment(args: argparse.Namespace) -> int:
         status = f"unknown 0x{response.status:02X}"
     print(f"{args.effect}: keyboard answered {status}")
     if response.status == Status.SUCCESS:
-        print("Accepted. Check whether the lighting actually changed, then restore with `bw effect static`.")
+        print("Accepted. Check whether the lighting actually changed, then restore with `bloom effect static`.")
     return 0
 
 
@@ -94,7 +94,7 @@ def cmd_keys(_: argparse.Namespace) -> int:
     print(f"Profile '{cfg.active_profile}':")
     _print_mappings(saved)
     if device.list_interfaces() and sorted(active) != sorted(saved):
-        print("\nNote: macOS currently has different mappings active. Run `bw apply`.")
+        print("\nNote: macOS currently has different mappings active. Run `bloom apply`.")
     return 0
 
 
@@ -112,8 +112,7 @@ def _save_mappings(mappings: list[keymap.Mapping]) -> None:
 
 def cmd_map(args: argparse.Namespace) -> int:
     src, dst = hid_usages.normalise(args.src), hid_usages.normalise(args.dst)
-    mappings = [m for m in config.load().active.mappings if m[0] != src]
-    _save_mappings(mappings + [(src, dst)])
+    _save_mappings(keymap.remap(config.load().active.mappings, src, dst))
     return 0
 
 
@@ -171,7 +170,7 @@ def _percent(value: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="bw", description="Razer BlackWidow Lite control")
+    parser = argparse.ArgumentParser(prog="bloom", description="Bloom: backlight and key mapping for the Razer BlackWidow Lite")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("probe", help="list HID interfaces and test which one accepts commands")
 
@@ -186,14 +185,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--speed", type=int, default=2, help="1 (fast) .. 3/4 (slow)")
 
     sub.add_parser("keys", help="show key mappings on this keyboard")
-    p = sub.add_parser("map", help="remap a key, e.g. `bw map caps_lock escape`")
+    p = sub.add_parser("map", help="remap a key, e.g. `bloom map caps_lock escape`")
     p.add_argument("src")
     p.add_argument("dst")
     p = sub.add_parser("unmap", help="remove one mapping, or all if no key given")
     p.add_argument("src", nargs="?")
     sub.add_parser("keynames", help="list key names usable with `map`")
 
-    sub.add_parser("gui", help="open the BlackWidow Control window")
+    sub.add_parser("gui", help="open the Bloom window")
     sub.add_parser("apply", help="apply the active profile (lighting and mappings)")
     sub.add_parser("watch", help="run the background helper in the foreground")
     p = sub.add_parser("agent", help="manage the background helper started at login")

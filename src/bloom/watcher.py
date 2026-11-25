@@ -11,6 +11,8 @@ from __future__ import annotations
 import logging
 import os
 import plistlib
+import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -18,17 +20,21 @@ from pathlib import Path
 
 import hid
 
-from . import config, keymap
+from . import APP_NAME, BUNDLE_ID, ICON_ICNS, config, keymap
 from .device import PRODUCT_ID, VENDOR_ID
 
-log = logging.getLogger("blackwidow.watch")
+log = logging.getLogger("bloom.watch")
 
 POLL_SECONDS = 2.0
 SETTLE_SECONDS = 1.0  # let macOS finish setting up the services after attach
 
-LABEL = "com.blackwidowcontrol.watch"
+LABEL = "com.bloom.watch"
 PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
-LOG_PATH = Path.home() / "Library" / "Logs" / "BlackWidowControl" / "watch.log"
+LOG_PATH = Path.home() / "Library" / "Logs" / "Bloom" / "watch.log"
+HELPER_BUNDLE = config.APP_DIR / f"{APP_NAME}.app"
+HELPER_EXECUTABLE = APP_NAME  # macOS lists a login item under its executable name
+LSREGISTER = ("/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+              "LaunchServices.framework/Support/lsregister")
 
 
 def _connected_paths() -> frozenset[bytes]:
@@ -77,12 +83,34 @@ def watch() -> None:
 # ---- LaunchAgent (start at login) -------------------------------------------
 
 
-def _bw_executable() -> str:
-    """The `bw` script in this project's virtualenv."""
-    exe = Path(sys.executable).with_name("bw")
+def _bloom_executable() -> str:
+    """The `bloom` script in this project's virtualenv."""
+    exe = Path(sys.executable).with_name("bloom")
     if not exe.exists():
-        raise RuntimeError(f"cannot find bw executable next to {sys.executable}")
+        raise RuntimeError(f"cannot find bloom executable next to {sys.executable}")
     return str(exe)
+
+
+def write_helper_bundle(bundle: Path, bloom_executable: str) -> Path:
+    """A minimal app around the watcher, so macOS lists the login item as Bloom, with its icon."""
+    contents = bundle / "Contents"
+    (contents / "MacOS").mkdir(parents=True, exist_ok=True)
+    (contents / "Resources").mkdir(parents=True, exist_ok=True)
+    info = {
+        "CFBundleName": APP_NAME,
+        "CFBundleDisplayName": APP_NAME,
+        "CFBundleIdentifier": BUNDLE_ID,
+        "CFBundleExecutable": HELPER_EXECUTABLE,
+        "CFBundleIconFile": ICON_ICNS.stem,
+        "CFBundlePackageType": "APPL",
+        "LSBackgroundOnly": True,
+    }
+    (contents / "Info.plist").write_bytes(plistlib.dumps(info))
+    shutil.copyfile(ICON_ICNS, contents / "Resources" / ICON_ICNS.name)
+    executable = contents / "MacOS" / HELPER_EXECUTABLE
+    executable.write_text(f"#!/bin/sh\nexec {shlex.quote(bloom_executable)} watch\n")
+    executable.chmod(0o755)
+    return executable
 
 
 def _launchctl(*args: str) -> subprocess.CompletedProcess:
@@ -94,18 +122,22 @@ def _domain() -> str:
 
 
 def agent_install() -> Path:
+    bloom_executable = _bloom_executable()
+    agent_uninstall()  # replace any previous version
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    executable = write_helper_bundle(HELPER_BUNDLE, bloom_executable)
+    subprocess.run([LSREGISTER, "-f", str(HELPER_BUNDLE)], capture_output=True)
     plist = {
         "Label": LABEL,
-        "ProgramArguments": [_bw_executable(), "watch"],
+        "ProgramArguments": [str(executable)],
+        "AssociatedBundleIdentifiers": [BUNDLE_ID],
         "RunAtLoad": True,
         "KeepAlive": True,
         "ProcessType": "Background",
         "StandardOutPath": str(LOG_PATH),
         "StandardErrorPath": str(LOG_PATH),
     }
-    agent_uninstall()  # replace any previous version
     PLIST_PATH.write_bytes(plistlib.dumps(plist))
     result = _launchctl("bootstrap", _domain(), str(PLIST_PATH))
     if result.returncode != 0:
@@ -116,6 +148,7 @@ def agent_install() -> Path:
 def agent_uninstall() -> bool:
     """Stop the helper and remove it from login. True if it was installed."""
     _launchctl("bootout", f"{_domain()}/{LABEL}")
+    shutil.rmtree(HELPER_BUNDLE, ignore_errors=True)
     if PLIST_PATH.exists():
         PLIST_PATH.unlink()
         return True

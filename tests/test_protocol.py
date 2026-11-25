@@ -3,8 +3,8 @@ OpenRazer helpers (razerchromacommon.c) for the BlackWidow Lite."""
 
 import pytest
 
-from blackwidow import protocol
-from blackwidow.protocol import REPORT_LEN, Report
+from bloom import protocol
+from bloom.protocol import REPORT_LEN, Report
 
 
 def header(raw: bytes) -> list[int]:

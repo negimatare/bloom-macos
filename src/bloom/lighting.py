@@ -14,7 +14,7 @@ class LightEffect(str, Enum):
     BREATHING = "breathing"
 
 
-# Effects not supported by OpenRazer for this model; testable via `bw experiment`.
+# Effects not supported by OpenRazer for this model; testable via `bloom experiment`.
 EXPERIMENTAL = {
     "reactive": protocol.effect_reactive,
     "starlight": protocol.effect_starlight,
