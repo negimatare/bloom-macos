@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from blackwidow import config
+from bloom import config
 
 
 def test_missing_file_gives_default(tmp_path):

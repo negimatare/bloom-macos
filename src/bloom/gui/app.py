@@ -1,4 +1,4 @@
-"""BlackWidow Control main window."""
+"""Bloom main window."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from .keys_tab import KeysTab
 from .lighting_tab import LightingTab
 from .profiles_tab import ProfilesTab
 
-APP_NAME = "BlackWidow Control"
+APP_NAME = "Bloom"
 
 
 class MainWindow(QMainWindow):

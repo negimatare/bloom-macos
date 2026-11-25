@@ -21,14 +21,14 @@ import hid
 from . import config, keymap
 from .device import PRODUCT_ID, VENDOR_ID
 
-log = logging.getLogger("blackwidow.watch")
+log = logging.getLogger("bloom.watch")
 
 POLL_SECONDS = 2.0
 SETTLE_SECONDS = 1.0  # let macOS finish setting up the services after attach
 
-LABEL = "com.blackwidowcontrol.watch"
+LABEL = "com.bloom.watch"
 PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
-LOG_PATH = Path.home() / "Library" / "Logs" / "BlackWidowControl" / "watch.log"
+LOG_PATH = Path.home() / "Library" / "Logs" / "Bloom" / "watch.log"
 
 
 def _connected_paths() -> frozenset[bytes]:
@@ -78,10 +78,10 @@ def watch() -> None:
 
 
 def _bw_executable() -> str:
-    """The `bw` script in this project's virtualenv."""
-    exe = Path(sys.executable).with_name("bw")
+    """The `bloom` script in this project's virtualenv."""
+    exe = Path(sys.executable).with_name("bloom")
     if not exe.exists():
-        raise RuntimeError(f"cannot find bw executable next to {sys.executable}")
+        raise RuntimeError(f"cannot find bloom executable next to {sys.executable}")
     return str(exe)
 
 

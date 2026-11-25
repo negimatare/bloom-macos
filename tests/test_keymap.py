@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from blackwidow import hid_usages, keymap
+from bloom import hid_usages, keymap
 
 SAMPLE_GET = """RegistryID  Key                   Value
 10000191f   UserKeyMapping   (

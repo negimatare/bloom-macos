@@ -10,8 +10,8 @@ from pathlib import Path
 
 from .lighting import LightEffect
 
-APP_DIR = Path.home() / "Library" / "Application Support" / "BlackWidowControl"
-CONFIG_PATH = Path(os.environ.get("BLACKWIDOW_CONFIG", APP_DIR / "config.json"))
+APP_DIR = Path.home() / "Library" / "Application Support" / "Bloom"
+CONFIG_PATH = Path(os.environ.get("BLOOM_CONFIG", APP_DIR / "config.json"))
 DEFAULT_PROFILE = "Default"
 
 
