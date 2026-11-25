@@ -17,3 +17,9 @@ def test_keys_do_not_overlap():
         for b in layout.KEYS[i + 1 :]:
             if a.y == b.y:
                 assert a.x + a.width <= b.x or b.x + b.width <= a.x, (a.legend, b.legend)
+
+
+def test_key_titles_spell_out_the_side_and_the_short_legends():
+    assert layout.BY_NAME["left_option"].title == "Left Alt"
+    assert layout.BY_NAME["caps_lock"].title == "Caps Lock"
+    assert layout.BY_NAME["a"].title == "A"

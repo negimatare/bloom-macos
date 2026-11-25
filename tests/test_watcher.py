@@ -10,6 +10,7 @@ def test_helper_bundle_carries_the_app_name_icon_and_starts_the_watcher(tmp_path
 
     info = plistlib.loads((bundle / "Contents" / "Info.plist").read_bytes())
     assert info["CFBundleName"] == APP_NAME
+    assert executable.name == info["CFBundleExecutable"] == APP_NAME
     assert info["CFBundleIdentifier"] == BUNDLE_ID
     assert (bundle / "Contents" / "Resources" / f"{info['CFBundleIconFile']}.icns").exists()
     assert os.access(executable, os.X_OK)

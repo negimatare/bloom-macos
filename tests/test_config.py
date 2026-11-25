@@ -54,6 +54,36 @@ def test_rename_to_a_used_name_is_refused():
         cfg.rename("Work", "Default")
 
 
+def test_renaming_the_active_profile_keeps_it_active():
+    cfg = config.Config()
+    assert cfg.rename("Default", "Home") == "Home"
+    assert cfg.active_profile == "Home"
+
+
+def test_renaming_a_profile_to_its_own_name_changes_nothing():
+    cfg = config.Config()
+    assert cfg.rename("Default", "Default") == "Default"
+    assert list(cfg.profiles) == ["Default"]
+
+
+def test_a_copied_profile_changes_without_changing_the_original():
+    cfg = config.Config()
+    cfg.active.mappings = [("caps_lock", "escape")]
+    cfg.create("Copy", copy_of="Default")
+    cfg.profiles["Copy"].lighting.brightness = 10
+    cfg.profiles["Copy"].mappings.append(("a", "b"))
+    assert cfg.active.lighting.brightness == 100
+    assert cfg.active.mappings == [("caps_lock", "escape")]
+
+
+def test_deleting_the_active_profile_activates_another():
+    cfg = config.Config()
+    cfg.create("Work")
+    cfg.active_profile = "Work"
+    cfg.delete("Work")
+    assert cfg.active_profile == "Default"
+
+
 def test_the_last_profile_cannot_be_deleted():
     cfg = config.Config()
     with pytest.raises(config.ProfileError):
@@ -76,6 +106,7 @@ def test_export_then_import_adds_a_copy_with_a_free_name():
     '{"bloom_profile": 1, "name": "X", "lighting": {"brightness": "loud"}}',
     '{"bloom_profile": 1, "name": "X", "lighting": {"brightness": 101}}',
     '{"bloom_profile": 1, "name": "X", "mappings": ["ab"]}',
+    '{"name": "X", "mappings": []}',
     "not json",
 ])
 def test_a_bad_import_file_raises_one_error_and_changes_nothing(text):
