@@ -4,7 +4,6 @@ Writes src/bloom/assets/bloom.png and, with macOS's iconutil, bloom.icns:
     uv run python scripts/make_icon.py
 """
 
-import shutil
 import subprocess
 import sys
 import tempfile
