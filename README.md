@@ -1,5 +1,10 @@
 # Bloom
 
+[![Latest release](https://img.shields.io/github/v/release/negimatare/bloom-macos?style=flat-square&label=release&color=e6a0cd)](https://github.com/negimatare/bloom-macos/releases/latest)
+[![Licence](https://img.shields.io/github/license/negimatare/bloom-macos?style=flat-square&label=licence&color=c9a0dc)](LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/negimatare/bloom-macos/tests.yml?branch=main&style=flat-square&label=tests)](https://github.com/negimatare/bloom-macos/actions/workflows/tests.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/negimatare/bloom-macos/codeql.yml?branch=main&style=flat-square&label=CodeQL)](https://github.com/negimatare/bloom-macos/actions/workflows/codeql.yml)
+
 Make every key yours. Keyboard customisation for macOS.
 
 Bloom controls the white backlight of a Razer BlackWidow Lite and remaps its
@@ -41,3 +46,12 @@ or delete the folder, run `uv run bloom app uninstall` and
 ```sh
 uv run pytest
 ```
+
+## Contributing
+
+`CONTRIBUTING.md` has the branches and the release steps. Report a
+vulnerability as `SECURITY.md` says.
+
+## Licence
+
+[MIT](LICENSE)

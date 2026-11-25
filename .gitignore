@@ -226,3 +226,4 @@ __marimo__/
 .DS_Store
 settings.local.json
 .plans/
+.reviews/
