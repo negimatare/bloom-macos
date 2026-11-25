@@ -32,7 +32,7 @@ LABEL = "com.bloom.watch"
 PLIST_PATH = Path.home() / "Library" / "LaunchAgents" / f"{LABEL}.plist"
 LOG_PATH = Path.home() / "Library" / "Logs" / "Bloom" / "watch.log"
 HELPER_BUNDLE = config.APP_DIR / f"{APP_NAME}.app"
-HELPER_EXECUTABLE = "bloom-watch"
+HELPER_EXECUTABLE = APP_NAME  # macOS lists a login item under its executable name
 LSREGISTER = ("/System/Library/Frameworks/CoreServices.framework/Frameworks/"
               "LaunchServices.framework/Support/lsregister")
 
