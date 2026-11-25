@@ -23,6 +23,12 @@ class ProfileError(ValueError):
     pass
 
 
+def _mapping(item: object) -> tuple[str, str]:
+    if not (isinstance(item, list) and len(item) == 2):
+        raise ValueError(f"a mapping must be a pair of key names, not {item!r}")
+    return str(item[0]), str(item[1])
+
+
 @dataclass
 class Lighting:
     effect: str = LightEffect.STATIC.value
@@ -39,7 +45,9 @@ class Profile:
     def from_dict(cls, data: dict) -> Profile:
         lighting = Lighting(**data.get("lighting", {}))
         LightEffect(lighting.effect)  # validate
-        mappings = [(str(a), str(b)) for a, b in data.get("mappings", [])]
+        if type(lighting.brightness) is not int or not 0 <= lighting.brightness <= 100:
+            raise ValueError(f"brightness must be a whole number from 0 to 100, not {lighting.brightness!r}")
+        mappings = [_mapping(m) for m in data.get("mappings", [])]
         icon = data.get("icon", DEFAULT_ICON)
         return cls(lighting=lighting, mappings=mappings,
                    icon=icon if icon in PROFILE_ICONS else DEFAULT_ICON)

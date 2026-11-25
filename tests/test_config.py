@@ -73,6 +73,9 @@ def test_export_then_import_adds_a_copy_with_a_free_name():
 @pytest.mark.parametrize("text", [
     '{"bloom_profile": 1, "name": "X", "mappings": [["caps_lock", "hyper"]]}',
     '{"bloom_profile": 1, "name": "X", "lighting": {"colour": "pink"}}',
+    '{"bloom_profile": 1, "name": "X", "lighting": {"brightness": "loud"}}',
+    '{"bloom_profile": 1, "name": "X", "lighting": {"brightness": 101}}',
+    '{"bloom_profile": 1, "name": "X", "mappings": ["ab"]}',
     "not json",
 ])
 def test_a_bad_import_file_raises_one_error_and_changes_nothing(text):
