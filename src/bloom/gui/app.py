@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 
 from . import icons, theme
 from .controller import Controller
-from .keys_tab import KeysTab
+from .keymap_studio import KeymapStudio
 from .lighting_studio import LightingStudio
 from .profiles_tab import ProfilesTab
 from .widgets import Toast, label, segmented
@@ -62,18 +62,18 @@ class MainWindow(QMainWindow):
         bar.addSpacing(10)
         bar.addWidget(self.profiles)
 
+        central = QWidget()
+        self.toast = Toast(central)
         self.pages = QStackedWidget()
-        for page in (LightingStudio(self.c), KeysTab(self.c), ProfilesTab(self.c)):
+        for page in (LightingStudio(self.c), KeymapStudio(self.c, self.toast), ProfilesTab(self.c)):
             self.pages.addWidget(page)
 
-        central = QWidget()
         layout = QVBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         layout.addWidget(topbar)
         layout.addWidget(self.pages, 1)
         self.setCentralWidget(central)
-        self.toast = Toast(central)
 
         self.nav.idClicked.connect(self.pages.setCurrentIndex)
         self.nav.button(START_SCREEN).setChecked(True)
@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
         self.c.connection_changed.connect(self._show_connection)
         self.c.config_changed.connect(self._show_profiles)
         self.c.message.connect(self.toast.show_message)
-        self.c.error.connect(lambda text: self.toast.show_message(text, error=True))
+        self.c.error.connect(lambda text: self.toast.show_message(text, "error"))
         self._show_connection(self.c.connected)
         self._show_profiles()
 

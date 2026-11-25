@@ -9,7 +9,7 @@ from ..lighting import LightEffect
 from . import icons, theme
 from .backlight_preview import KeyboardPreview
 from .controller import Controller
-from .widgets import ToggleSwitch, card, label, segmented, separator, text_block
+from .widgets import StatusLine, ToggleSwitch, card, label, segmented, separator, text_block
 
 DEBOUNCE_MS = 150
 PRESETS = [("Night", 15), ("Soft", 35), ("Normal", 70), ("Maximum", 100)]
@@ -80,11 +80,7 @@ class LightingStudio(QWidget):
         settings_layout.addWidget(separator())
         settings_layout.addLayout(effect_row)
 
-        self.footer_icon = QLabel()
-        self.footer = label(role="muted")
-        footer = QHBoxLayout()
-        footer.addWidget(self.footer_icon)
-        footer.addWidget(self.footer, 1)
+        self.status = StatusLine()
 
         page = QVBoxLayout(self)
         page.setContentsMargins(24, 20, 24, 16)
@@ -93,7 +89,7 @@ class LightingStudio(QWidget):
         page.addWidget(preview_card)
         page.addWidget(settings)
         page.addStretch(1)
-        page.addLayout(footer)
+        page.addWidget(self.status)
 
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
@@ -139,14 +135,12 @@ class LightingStudio(QWidget):
         self.preview.set_state(self._current_effect(), value)
 
     def _show_footer(self, *_args) -> None:
+        profile = self.c.config.active_profile
         if self.c.connected:
-            text = f"Applied to the keyboard · profile {self.c.config.active_profile}"
-            colour = theme.SUCCESS
+            self.status.show_status(f"Applied to the keyboard · profile {profile}", ok=True)
         else:
-            text = f"Saved to profile {self.c.config.active_profile}. It applies when the keyboard connects."
-            colour = theme.MUTED
-        self.footer_icon.setPixmap(icons.pixmap("circle-check", colour, 14))
-        self.footer.setText(text)
+            self.status.show_status(
+                f"Saved to profile {profile}. It applies when the keyboard connects.", ok=False)
 
     # ---- widgets -> keyboard -------------------------------------------------
 

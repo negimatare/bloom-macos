@@ -11,6 +11,7 @@ BACKGROUND = "#171519"
 PANEL = "#242027"
 KEY = "#343039"
 REMAPPED = "#493145"
+REMAPPED_BORDER = "#7A5A70"
 ACCENT = "#E6A0CD"
 ON_ACCENT = "#2A1A26"
 TEXT = "#EDE8EE"
@@ -31,12 +32,16 @@ QToolTip {{ background: {PANEL}; color: {TEXT}; border: 1px solid {BORDER_STRONG
 QFrame#topbar {{ border-bottom: 1px solid {BORDER}; }}
 QFrame[role="card"] {{ background: {PANEL}; border: 1px solid {BORDER}; border-radius: 12px; }}
 QFrame[role="card"] QWidget {{ background: transparent; }}
+QFrame[role="card"][active="true"] {{ border-color: {ACCENT}; background: #2B2330; }}
 QFrame[role="card"] QFrame[role="separator"] {{ background: {BORDER}; max-height: 1px; min-height: 1px; }}
 
 QLabel[role="wordmark"] {{ color: {ACCENT}; font-size: 16px; font-weight: 600; letter-spacing: 2px; }}
 QLabel[role="title"] {{ font-size: 21px; font-weight: 600; }}
 QLabel[role="heading"] {{ font-size: 14px; font-weight: 600; }}
 QLabel[role="muted"] {{ color: {MUTED}; font-size: 12px; }}
+QLabel[role="badge"] {{
+    background: {REMAPPED}; color: {ACCENT}; border-radius: 8px; padding: 5px 12px; font-size: 12px;
+}}
 QLabel[role="value"] {{ color: {ACCENT}; font-size: 18px; font-weight: 600; }}
 
 QPushButton {{
@@ -46,6 +51,12 @@ QPushButton {{
 QPushButton:hover {{ border-color: {MUTED}; }}
 QPushButton:disabled {{ color: {DISABLED}; border-color: {BORDER}; }}
 QPushButton[role="primary"] {{ background: {ACCENT}; color: {ON_ACCENT}; border: none; font-weight: 600; }}
+QPushButton[role="flat"] {{ background: transparent; border: none; color: {MUTED}; padding: 4px 6px; }}
+QPushButton[role="flat"]:hover {{ color: {TEXT}; }}
+QPushButton[role="flat"]:disabled {{ color: {DISABLED}; }}
+QPushButton[role="flat-heading"] {{
+    background: transparent; border: none; padding: 4px 0; font-size: 14px; font-weight: 600; text-align: left;
+}}
 QPushButton[role="nav"] {{
     background: transparent; border: none; border-radius: 8px; padding: 6px 14px; color: {MUTED};
 }}
@@ -74,11 +85,10 @@ QSlider::handle:horizontal {{
     background: #FFFFFF; width: 18px; height: 18px; margin: -6px 0; border-radius: 9px;
 }}
 
-QTableWidget, QListWidget {{
+QListWidget {{
     background: {PANEL}; border: 1px solid {BORDER}; border-radius: 8px; gridline-color: {BORDER};
 }}
-QListWidget::item:selected, QTableWidget::item:selected {{ background: {REMAPPED}; color: {ACCENT}; }}
-QHeaderView::section {{ background: {PANEL}; color: {MUTED}; border: none; padding: 4px; }}
+QListWidget::item:selected {{ background: {REMAPPED}; color: {ACCENT}; }}
 """
 
 

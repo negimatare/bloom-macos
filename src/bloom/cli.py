@@ -112,8 +112,7 @@ def _save_mappings(mappings: list[keymap.Mapping]) -> None:
 
 def cmd_map(args: argparse.Namespace) -> int:
     src, dst = hid_usages.normalise(args.src), hid_usages.normalise(args.dst)
-    mappings = [m for m in config.load().active.mappings if m[0] != src]
-    _save_mappings(mappings + [(src, dst)])
+    _save_mappings(keymap.remap(config.load().active.mappings, src, dst))
     return 0
 
 

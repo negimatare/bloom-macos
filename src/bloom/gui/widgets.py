@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import re
+from collections.abc import Callable
+
 from PySide6.QtCore import QEvent, QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
@@ -18,7 +21,7 @@ from PySide6.QtWidgets import (
 from . import icons, theme
 
 TOAST_MS = 5000
-ERROR_TOAST_MS = 9000
+LONG_TOAST_MS = 9000
 
 
 def label(text: str = "", role: str | None = None) -> QLabel:
@@ -63,6 +66,23 @@ def segmented(labels: list[str], role: str) -> tuple[QHBoxLayout, QButtonGroup]:
     return row, group
 
 
+class StatusLine(QWidget):
+    """A small check icon and muted text: green when the change reached the keyboard."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._icon = QLabel()
+        self._text = label(role="muted")
+        row = QHBoxLayout(self)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.addWidget(self._icon)
+        row.addWidget(self._text, 1)
+
+    def show_status(self, text: str, ok: bool) -> None:
+        self._icon.setPixmap(icons.pixmap("circle-check", theme.SUCCESS if ok else theme.MUTED, 14))
+        self._text.setText(text)
+
+
 class ToggleSwitch(QAbstractButton):
     """An on/off pill switch."""
 
@@ -94,6 +114,12 @@ class ToggleSwitch(QAbstractButton):
 class Toast(QFrame):
     """A short, non-blocking notice at the bottom of its parent window."""
 
+    KINDS = {
+        "success": ("circle-check", theme.SUCCESS),
+        "warning": ("circle-alert", theme.ACCENT),
+        "error": ("circle-alert", theme.ERROR),
+    }
+
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
         self.setStyleSheet(
@@ -103,25 +129,38 @@ class Toast(QFrame):
         self._icon = QLabel()
         self._text = QLabel()
         self._text.setWordWrap(True)
+        self._actions = QHBoxLayout()
         layout = QHBoxLayout(self)
         layout.setContentsMargins(14, 10, 14, 10)
-        layout.addWidget(self._icon)
+        layout.addWidget(self._icon, alignment=Qt.AlignTop)
         layout.addWidget(self._text, 1)
+        layout.addLayout(self._actions)
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self.hide)
         parent.installEventFilter(self)
         self.hide()
 
-    def show_message(self, text: str, error: bool = False) -> None:
-        name, colour = ("circle-alert", theme.ERROR) if error else ("circle-check", theme.SUCCESS)
+    def show_message(self, text: str, kind: str = "success",
+                     actions: list[tuple[str, Callable[[], None]]] = ()) -> None:
+        """`text` may use simple HTML; each action is a button that runs and closes."""
+        name, colour = self.KINDS[kind]
         self._icon.setPixmap(icons.pixmap(name, colour))
         self._text.setText(text)
-        self.setAccessibleName(text)
+        self.setAccessibleName(re.sub(r"<[^>]+>", " ", text))
+        while self._actions.count():
+            self._actions.takeAt(0).widget().deleteLater()
+        for i, (caption, run) in enumerate(actions):
+            button = QPushButton(caption)
+            button.setCursor(Qt.PointingHandCursor)
+            if i == len(actions) - 1:
+                button.setProperty("role", "primary")
+            button.clicked.connect(lambda _=False, run=run: (self.hide(), run()))
+            self._actions.addWidget(button)
         self._place()
         self.show()
         self.raise_()
-        self._timer.start(ERROR_TOAST_MS if error else TOAST_MS)
+        self._timer.start(LONG_TOAST_MS if kind == "error" or actions else TOAST_MS)
 
     def eventFilter(self, watched, event) -> bool:
         if event.type() == QEvent.Resize and self.isVisible():
@@ -130,7 +169,7 @@ class Toast(QFrame):
 
     def _place(self) -> None:
         parent = self.parentWidget()
-        width = min(480, parent.width() - 40)
+        width = min(560, parent.width() - 40)
         self.setFixedWidth(width)
         self.adjustSize()
         self.move((parent.width() - width) // 2, parent.height() - self.height() - 20)

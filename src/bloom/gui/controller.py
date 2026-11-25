@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import QCoreApplication, QObject, QTimer, Signal
 
-from .. import config, device, keymap, lighting, watcher
-from ..apply import apply_lighting, apply_mappings
+from .. import config, device, keymap, layout, lighting, watcher
+from ..apply import apply_lighting, apply_mappings, apply_profile
 from ..config import Config, Profile
 from ..lighting import LightEffect
 
@@ -23,6 +23,12 @@ class Controller(QObject):
         self.config: Config = config.load()
         self._paths: frozenset[bytes] = frozenset()
         self._control_path: bytes | None = None
+        self._listening = False
+        self._undo: tuple[str, Profile] | None = None
+        self._last_assignment: tuple[str, str] | None = None
+        app = QCoreApplication.instance()
+        if app is not None:
+            app.aboutToQuit.connect(self.stop_listening)
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._poll)
         self._timer.start(POLL_MS)
@@ -41,7 +47,7 @@ class Controller(QObject):
         was_connected = self.connected
         self._paths = paths
         self._control_path = None
-        if paths and not self.helper_running():
+        if paths and not self._listening and not self.helper_running():
             # No background helper, so re-apply mappings ourselves.
             self._run(lambda: apply_mappings(self.profile), "")
         if self.connected != was_connected:
@@ -102,28 +108,75 @@ class Controller(QObject):
 
     # ---- key mappings -------------------------------------------------------
 
-    def set_mappings(self, mappings: list[tuple[str, str]]) -> bool:
-        try:
-            mappings = keymap.normalise(mappings)
-        except (keymap.KeymapError, KeyError) as exc:
-            self.error.emit(str(exc))
-            return False
-        self.profile.mappings = mappings
-        self.save()
-        if not self.connected:
-            self.message.emit("Saved. Mappings will apply when the keyboard connects.")
-            return True
-        return self._run(lambda: apply_mappings(self.profile),
-                         f"{len(mappings)} mapping(s) applied")
+    @property
+    def listening(self) -> bool:
+        return self._listening
 
-    def suspend_mappings(self) -> None:
-        """Temporarily remove mappings, so key capture sees the physical key."""
-        if self.connected:
-            self._run(keymap.clear, "")
+    def start_listening(self) -> None:
+        """Remove the mappings for a moment, so a key press reports the physical key."""
+        if not self._listening:
+            self._listening = True
+            if self.connected:
+                self._run(keymap.clear, "")
 
-    def resume_mappings(self) -> None:
+    def stop_listening(self) -> None:
+        if self._listening:
+            self._listening = False
+            self._apply_mappings()
+
+    def _apply_mappings(self) -> None:
         if self.connected:
             self._run(lambda: apply_mappings(self.profile), "")
+
+    def _keep_undo(self) -> None:
+        self._undo = (self.config.active_profile, Profile.from_dict(self.profile.to_dict()))
+        self._last_assignment = None
+
+    def _set_mappings(self, mappings: list[keymap.Mapping]) -> None:
+        self._listening = False  # the new mappings replace the paused ones
+        self.profile.mappings = mappings
+        self.save()
+        self._apply_mappings()
+
+    def assign(self, key: str, function: str) -> keymap.Change:
+        """Make `key` give `function`, by swap when another key gives it now."""
+        change = keymap.assign(self.profile.mappings, key, function, layout.KEY_NAMES)
+        self._keep_undo()
+        self._last_assignment = (key, function)
+        self._set_mappings(change.mappings)
+        return change
+
+    def revert(self, key: str) -> keymap.Change:
+        change = keymap.assign(self.profile.mappings, key, key, layout.KEY_NAMES)
+        self._keep_undo()
+        self._set_mappings(change.mappings)
+        return change
+
+    def reset_mappings(self) -> None:
+        self._keep_undo()
+        self._set_mappings([])
+
+    def keep_both(self) -> None:
+        """After a swap, give the swapped key its function back too."""
+        if self._undo is None or self._last_assignment is None:
+            return
+        name, before = self._undo
+        if name != self.config.active_profile:
+            return
+        key, function = self._last_assignment
+        self._set_mappings(keymap.remap(before.mappings, key, function))
+
+    def undo(self) -> None:
+        if self._undo is None:
+            return
+        name, before = self._undo
+        self._undo = self._last_assignment = None
+        if name not in self.config.profiles:
+            return
+        self.config.profiles[name] = before
+        self.save()
+        if name == self.config.active_profile and self.connected:
+            self._run(lambda: apply_profile(self.profile), "")
 
     # ---- background helper --------------------------------------------------
 

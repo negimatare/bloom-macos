@@ -21,6 +21,20 @@ class Key:
     y: float
     width: float = 1.0
 
+    @property
+    def title(self) -> str:
+        """How messages name the key, for example "Left Alt" or "Caps Lock"."""
+        side, _, kind = (self.name or "").partition("_")
+        if side in ("left", "right") and kind in _SIDED_KINDS:
+            return f"{side.title()} {self.legend}"
+        return _TITLES.get(self.legend, self.legend)
+
+
+_SIDED_KINDS = {"control", "shift", "option", "command"}
+_TITLES = {"Caps": "Caps Lock", "Esc": "Escape", "Del": "Delete", "Ins": "Insert",
+           "PgUp": "Page Up", "PgDn": "Page Down", "PrtSc": "Print Screen",
+           "ScrLk": "Scroll Lock", "↑": "Up", "↓": "Down", "←": "Left", "→": "Right"}
+
 
 # Each row: (key name, legend, width); a None name with a "" legend is a gap.
 _Row = list[tuple[str | None, str, float]]
@@ -76,5 +90,7 @@ def _build() -> tuple[Key, ...]:
 
 
 KEYS: tuple[Key, ...] = _build()
+BY_NAME: dict[str, Key] = {k.name: k for k in KEYS if k.name}
+KEY_NAMES: list[str] = list(BY_NAME)
 WIDTH = NAV_X + 3
 HEIGHT = max(k.y for k in KEYS) + 1
