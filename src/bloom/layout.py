@@ -16,7 +16,7 @@ NAV_X = 15 + GAP
 @dataclass(frozen=True)
 class Key:
     name: str | None  # None: handled by the keyboard firmware, macOS never sees it
-    legend: str  # what is printed on the Razer keycap
+    legend: str
     x: float
     y: float
     width: float = 1.0
