@@ -134,10 +134,10 @@ class ProfileStudio(QWidget):
 
     def _restore(self) -> None:
         name = self._selected
-        self.c.restore_default(name)
-        self.toast.show_message(
-            f"<b>{escape(name)} restored to default</b><br>No remaps, static light at 100%.",
-            actions=[("Undo", self._undo)])
+        if self.c.restore_default(name):
+            self.toast.show_message(
+                f"<b>{escape(name)} restored to default</b><br>No remaps, static light at 100%.",
+                actions=[("Undo", self._undo)])
 
     def _delete(self) -> None:
         name = self._selected
@@ -145,8 +145,8 @@ class ProfileStudio(QWidget):
             self.toast.show_message(f"<b>Profile '{escape(name)}' deleted</b>", actions=[("Undo", self._undo)])
 
     def _undo(self) -> None:
-        self.c.undo()
-        self.toast.show_message("Change undone.")
+        if self.c.undo():
+            self.toast.show_message("Change undone.")
 
     def _export(self) -> None:
         name = self._selected

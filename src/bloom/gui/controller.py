@@ -2,16 +2,26 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, QObject, QTimer, Signal
 
 from .. import config, device, keymap, layout, lighting, watcher
-from ..apply import apply_mappings, apply_profile
+from ..apply import apply_lighting, apply_mappings, apply_profile
 from ..config import Config, Profile
 from ..lighting import LightEffect
 
 POLL_MS = 2000
+
+
+@dataclass
+class _Undo:
+    name: str
+    before: Profile
+    only_mappings: bool
+    reactivate: bool = False
 
 
 class Controller(QObject):
@@ -27,7 +37,7 @@ class Controller(QObject):
         self._paths: frozenset[bytes] = frozenset()
         self._control_path: bytes | None = None
         self._listening = False
-        self._undo: tuple[str, Profile] | None = None
+        self._undo: _Undo | None = None
         self._last_assignment: tuple[str, str] | None = None
         app = QCoreApplication.instance()
         if app is not None:
@@ -58,6 +68,9 @@ class Controller(QObject):
         if paths and not self._listening and not self.helper_running():
             # No background helper, so re-apply mappings ourselves.
             self._run(lambda: apply_mappings(self.profile), "")
+        if paths:
+            # The keyboard misses lighting changes made while it was unplugged.
+            self._run(lambda: apply_lighting(self.profile), "")
         if self.connected != was_connected:
             self.connection_changed.emit(self.connected)
 
@@ -86,9 +99,20 @@ class Controller(QObject):
     def profile(self) -> Profile:
         return self.config.active
 
-    def save(self) -> None:
-        config.save(self.config)
-        self.config_changed.emit()
+    def save(self) -> bool:
+        try:
+            config.save(self.config)
+        except OSError as exc:
+            self.error.emit(f"The settings can't be saved: {exc}")
+            return False
+        finally:
+            self.config_changed.emit()
+        return True
+
+    def _apply_and_save(self, apply: Callable[[], bool]) -> bool:
+        """Apply even when the save will fail; a save error comes last, so it stays on screen."""
+        applied = apply()
+        return self.save() and applied
 
     # ---- lighting -----------------------------------------------------------
 
@@ -135,58 +159,61 @@ class Controller(QObject):
             self._listening = False
             self._apply_mappings()
 
-    def _apply_mappings(self) -> None:
-        if self.connected:
-            self._run(lambda: apply_mappings(self.profile), "")
+    def _apply_mappings(self) -> bool:
+        return not self.connected or self._run(lambda: apply_mappings(self.profile), "")
 
-    def _keep_undo(self, name: str | None = None) -> None:
-        name = name or self.config.active_profile
-        self._undo = (name, self.config.profiles[name].copy())
+    def _apply_profile(self, success: str = "") -> bool:
+        return not self.connected or self._run(lambda: apply_profile(self.profile), success)
+
+    def _keep_undo(self) -> None:
+        name = self.config.active_profile
+        self._undo = _Undo(name, self.config.profiles[name].copy(), only_mappings=True)
         self._last_assignment = None
 
-    def _set_mappings(self, mappings: list[keymap.Mapping]) -> None:
+    def _set_mappings(self, mappings: list[keymap.Mapping]) -> bool:
         self._listening = False  # the new mappings replace the paused ones
         self.profile.mappings = mappings
-        self.save()
-        self._apply_mappings()
+        return self._apply_and_save(self._apply_mappings)
 
-    def assign(self, key: str, function: str) -> keymap.Change:
-        """Make `key` give `function`, by swap when another key gives it now."""
+    def assign(self, key: str, function: str) -> keymap.Change | None:
+        """Make `key` give `function`, by swap when another key gives it now. None if it failed."""
         change = keymap.assign(self.profile.mappings, key, function, layout.KEY_NAMES)
         self._keep_undo()
         self._last_assignment = (key, function)
-        self._set_mappings(change.mappings)
-        return change
+        return change if self._set_mappings(change.mappings) else None
 
-    def revert(self, key: str) -> keymap.Change:
+    def revert(self, key: str) -> keymap.Change | None:
         change = keymap.assign(self.profile.mappings, key, key, layout.KEY_NAMES)
         self._keep_undo()
-        self._set_mappings(change.mappings)
-        return change
+        return change if self._set_mappings(change.mappings) else None
 
-    def reset_mappings(self) -> None:
+    def reset_mappings(self) -> bool:
         self._keep_undo()
-        self._set_mappings([])
+        return self._set_mappings([])
 
-    def keep_both(self) -> None:
+    def keep_both(self) -> bool:
         """After a swap, give the swapped key its function back too."""
-        if self._undo is None or self._last_assignment is None:
-            return
-        name, before = self._undo
-        if name != self.config.active_profile:
-            return
-        key, function = self._last_assignment
-        self._set_mappings(keymap.remap(before.mappings, key, function))
+        entry, assignment = self._undo, self._last_assignment
+        if entry is None or assignment is None or entry.name != self.config.active_profile:
+            return False
+        key, function = assignment
+        return self._set_mappings(keymap.remap(entry.before.mappings, key, function))
 
-    def undo(self) -> None:
-        if self._undo is None:
-            return
-        name, before = self._undo
+    def undo(self) -> bool:
+        """Undo of a remap change keeps the lighting changes made after it."""
+        entry = self._undo
+        if entry is None:
+            return False
         self._undo = self._last_assignment = None
-        self.config.profiles[name] = before
-        self.save()
-        if name == self.config.active_profile and self.connected:
-            self._run(lambda: apply_profile(self.profile), "")
+        if entry.only_mappings:
+            self.config.profiles[entry.name].mappings = entry.before.mappings
+        else:
+            self.config.profiles[entry.name] = entry.before
+        if entry.reactivate:
+            return self.activate(entry.name)
+        if entry.name != self.config.active_profile:
+            return self.save()
+        return self._apply_and_save(self._apply_mappings if entry.only_mappings else self._apply_profile)
 
     # ---- background helper --------------------------------------------------
 
@@ -206,13 +233,11 @@ class Controller(QObject):
 
     # ---- profiles -----------------------------------------------------------
 
-    def activate(self, name: str) -> None:
+    def activate(self, name: str) -> bool:
         self.config.active_profile = name
-        self.save()
         if not self.connected:
             self.message.emit(f"Profile '{name}' active. The keyboard isn't connected.")
-            return
-        self._run(lambda: apply_profile(self.profile), f"Profile '{name}' applied")
+        return self._apply_and_save(lambda: self._apply_profile(f"Profile '{name}' applied"))
 
     def _profile_rule(self, rule) -> object | None:
         """Run a `Config` rule; report a refused one and return None."""
@@ -244,19 +269,19 @@ class Controller(QObject):
         except config.ProfileError as exc:
             self.error.emit(str(exc))
             return False
-        self._undo, self._last_assignment = (name, before), None
+        self._undo = _Undo(name, before, only_mappings=False, reactivate=was_active)
+        self._last_assignment = None
         if was_active:
-            self.activate(self.config.active_profile)
-        else:
-            self.save()
-        return True
+            return self.activate(self.config.active_profile)
+        return self.save()
 
-    def restore_default(self, name: str) -> None:
-        self._keep_undo(name)
+    def restore_default(self, name: str) -> bool:
+        self._undo = _Undo(name, self.config.profiles[name].copy(), only_mappings=False)
+        self._last_assignment = None
         self.config.restore_default(name)
-        self.save()
-        if name == self.config.active_profile and self.connected:
-            self._run(lambda: apply_profile(self.profile), "")
+        if name != self.config.active_profile:
+            return self.save()
+        return self._apply_and_save(self._apply_profile)
 
     def export_profile(self, name: str, path: str) -> bool:
         return self._run(lambda: Path(path).write_text(self.config.export_profile(name)), "")

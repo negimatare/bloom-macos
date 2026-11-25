@@ -164,6 +164,8 @@ class KeymapStudio(QWidget):
     def _assign(self, key: str, function: str) -> None:
         old = keymap.function_of(self.c.profile.mappings, key)
         change = self.c.assign(key, function)
+        if change is None:
+            return
         undo = ("Undo", self._undo)
         self._flash(key, change.swapped_with)
         if change.swapped_with:
@@ -186,6 +188,8 @@ class KeymapStudio(QWidget):
     def _revert(self, key: str) -> None:
         self._finish(None)
         change = self.c.revert(key)
+        if change is None:
+            return
         self._flash(key, change.swapped_with)
         text = f"<b>{key_title(key)} restored</b>"
         if change.swapped_with:
@@ -196,16 +200,16 @@ class KeymapStudio(QWidget):
 
     def _reset_all(self) -> None:
         self._finish(None)
-        self.c.reset_mappings()
-        self.toast.show_message("<b>All remaps removed</b>", actions=[("Undo", self._undo)])
+        if self.c.reset_mappings():
+            self.toast.show_message("<b>All remaps removed</b>", actions=[("Undo", self._undo)])
 
     def _undo(self) -> None:
-        self.c.undo()
-        self.toast.show_message("Change undone.")
+        if self.c.undo():
+            self.toast.show_message("Change undone.")
 
     def _keep_both(self) -> None:
-        self.c.keep_both()
-        self.toast.show_message("Both keys kept: they give the same function now.")
+        if self.c.keep_both():
+            self.toast.show_message("Both keys kept: they give the same function now.")
 
     def _flash(self, *names: str | None) -> None:
         for name in names:
