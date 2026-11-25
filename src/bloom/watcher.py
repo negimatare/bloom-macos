@@ -122,6 +122,7 @@ def _domain() -> str:
 
 
 def agent_install() -> Path:
+    agent_uninstall()  # replace any previous version
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     PLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
     executable = write_helper_bundle(HELPER_BUNDLE, _bloom_executable())
@@ -136,7 +137,6 @@ def agent_install() -> Path:
         "StandardOutPath": str(LOG_PATH),
         "StandardErrorPath": str(LOG_PATH),
     }
-    agent_uninstall()  # replace any previous version
     PLIST_PATH.write_bytes(plistlib.dumps(plist))
     result = _launchctl("bootstrap", _domain(), str(PLIST_PATH))
     if result.returncode != 0:
