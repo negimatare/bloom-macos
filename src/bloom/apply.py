@@ -26,5 +26,5 @@ def apply_mappings(profile: Profile) -> None:
 
 
 def apply_profile(profile: Profile) -> None:
-    apply_lighting(profile)
     apply_mappings(profile)
+    apply_lighting(profile)
