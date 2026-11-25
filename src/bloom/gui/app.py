@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import subprocess
 import sys
 
@@ -89,8 +90,8 @@ class MainWindow(QMainWindow):
         self.profiles.activated.connect(lambda i: self.c.activate(self.profiles.itemText(i)))
         self.c.connection_changed.connect(self._show_connection)
         self.c.config_changed.connect(self._show_profiles)
-        self.c.message.connect(self.toast.show_message)
-        self.c.error.connect(lambda text: self.toast.show_message(text, "error"))
+        self.c.message.connect(lambda text: self.toast.show_message(html.escape(text)))
+        self.c.error.connect(lambda text: self.toast.show_message(html.escape(text), "error"))
         self.c.permission_needed.connect(self._ask_permission)
         self._show_connection(self.c.connected)
         self._show_profiles()

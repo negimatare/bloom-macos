@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import html
 import re
 from collections.abc import Callable
 
 from PySide6.QtCore import QEvent, QRectF, QSize, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QAccessible, QAccessibleAnnouncementEvent, QColor, QPainter
 from PySide6.QtWidgets import (
     QAbstractButton,
     QButtonGroup,
@@ -142,6 +143,7 @@ class Toast(QFrame):
         )
         self._icon = QLabel()
         self._text = QLabel()
+        self._text.setTextFormat(Qt.RichText)
         self._text.setWordWrap(True)
         self._actions = QHBoxLayout()
         layout = QHBoxLayout(self)
@@ -157,11 +159,12 @@ class Toast(QFrame):
 
     def show_message(self, text: str, kind: str = "success",
                      actions: list[tuple[str, Callable[[], None]]] = ()) -> None:
-        """`text` may use simple HTML; each action is a button that runs and closes."""
+        """`text` is simple HTML, so escape names in it; each action is a button that runs and closes."""
         name, colour = self.KINDS[kind]
         self._icon.setPixmap(icons.pixmap(name, colour))
         self._text.setText(text)
-        self.setAccessibleName(re.sub(r"<[^>]+>", " ", text))
+        spoken = html.unescape(re.sub(r"<[^>]+>", " ", text))
+        self.setAccessibleName(spoken)
         clear(self._actions)
         for i, (caption, run) in enumerate(actions):
             button = QPushButton(caption)
@@ -174,6 +177,10 @@ class Toast(QFrame):
         self.show()
         self.raise_()
         self._timer.start(LONG_TOAST_MS if kind == "error" or actions else TOAST_MS)
+        announcement = QAccessibleAnnouncementEvent(self, spoken)
+        if kind == "error":
+            announcement.setPoliteness(QAccessible.AnnouncementPoliteness.Assertive)
+        QAccessible.updateAccessibility(announcement)
 
     def eventFilter(self, watched, event) -> bool:
         if event.type() == QEvent.Resize and self.isVisible():

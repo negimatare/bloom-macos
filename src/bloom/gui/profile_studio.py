@@ -5,6 +5,7 @@ Selecting a profile only shows it; "Use profile" makes it active.
 
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -114,7 +115,7 @@ class ProfileStudio(QWidget):
         answer = self._ask("New profile", self.c.config.free_name("New profile"), "keyboard")
         if answer and (name := self.c.new_profile(*answer)):
             self._select(name)
-            self.toast.show_message(f"Profile '{name}' created.")
+            self.toast.show_message(f"Profile '{escape(name)}' created.")
 
     def _edit(self) -> None:
         profile = self.c.config.profiles[self._selected]
@@ -129,19 +130,19 @@ class ProfileStudio(QWidget):
         name = self.c.new_profile(self.c.config.free_name(f"{source} copy"), icon, copy_of=source)
         if name:
             self._select(name)
-            self.toast.show_message(f"Profile '{name}' created from '{source}'.")
+            self.toast.show_message(f"Profile '{escape(name)}' created from '{escape(source)}'.")
 
     def _restore(self) -> None:
         name = self._selected
         self.c.restore_default(name)
         self.toast.show_message(
-            f"<b>{name} restored to default</b><br>No remaps, static light at 100%.",
+            f"<b>{escape(name)} restored to default</b><br>No remaps, static light at 100%.",
             actions=[("Undo", self._undo)])
 
     def _delete(self) -> None:
         name = self._selected
         if self.c.delete_profile(name):
-            self.toast.show_message(f"<b>Profile '{name}' deleted</b>", actions=[("Undo", self._undo)])
+            self.toast.show_message(f"<b>Profile '{escape(name)}' deleted</b>", actions=[("Undo", self._undo)])
 
     def _undo(self) -> None:
         self.c.undo()
@@ -152,10 +153,10 @@ class ProfileStudio(QWidget):
         path, _ = QFileDialog.getSaveFileName(
             self, "Export profile", str(Path.home() / f"{name}.json"), EXPORT_FILTER)
         if path and self.c.export_profile(name, path):
-            self.toast.show_message(f"Profile '{name}' exported to {Path(path).name}.")
+            self.toast.show_message(f"Profile '{escape(name)}' exported to {escape(Path(path).name)}.")
 
     def _import(self) -> None:
         path, _ = QFileDialog.getOpenFileName(self, "Import profile", str(Path.home()), EXPORT_FILTER)
         if path and (name := self.c.import_profile(path)):
             self._select(name)
-            self.toast.show_message(f"Profile '{name}' imported.")
+            self.toast.show_message(f"Profile '{escape(name)}' imported.")
