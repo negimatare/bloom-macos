@@ -3,6 +3,8 @@ name = "bloom"
 version = "0.1.0"
 description = "Bloom: backlight and key mapping for the Razer BlackWidow Lite on macOS"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "negimatare", email = "116022383+negimatare@users.noreply.github.com" }
 ]
