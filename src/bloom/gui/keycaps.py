@@ -38,7 +38,6 @@ class KeyCap(QAbstractButton):
         super().__init__(parent)
         self.key = key
         self.function = key.name
-        self.selected = False
         self.listening = False
         self._flash_start = -1.0
         self._frames = QTimer(self)
@@ -54,8 +53,8 @@ class KeyCap(QAbstractButton):
     def remapped(self) -> bool:
         return self.key.name is not None and self.function != self.key.name
 
-    def set_state(self, function: str | None, selected: bool, listening: bool) -> None:
-        self.function, self.selected, self.listening = function, selected, listening
+    def set_state(self, function: str | None, listening: bool) -> None:
+        self.function, self.listening = function, listening
         if self.key.name is not None:
             gives = function_text(function)
             self.setAccessibleName(f"{self.key.title}, gives {gives}")
@@ -88,13 +87,11 @@ class KeyCap(QAbstractButton):
 
         if self.key.name is None:
             fill, border, text = theme.BACKGROUND, theme.BORDER, theme.DISABLED
-        elif self.selected and not self.listening:
-            fill, border, text = theme.ACCENT, "#FFFFFF", theme.ON_ACCENT
         elif self.remapped or self.listening:
             fill, border, text = theme.REMAPPED, theme.REMAPPED_BORDER, theme.TEXT
         else:
             fill, border, text = theme.KEY, theme.BORDER_STRONG, theme.TEXT
-        if self.underMouse() and self.key.name is not None and not self.selected:
+        if self.underMouse() and self.key.name is not None and not self.listening:
             border = theme.MUTED
         fill_colour = QColor(fill)
         flash = self._flash_level()
@@ -114,10 +111,10 @@ class KeyCap(QAbstractButton):
 
         font = QFont(self.font())
         unit = self.height()
-        if self.remapped or self.selected or self.listening:
+        if self.remapped or self.listening:
             font.setPixelSize(max(7, round(unit * 0.2)))
             painter.setFont(font)
-            painter.setPen(QColor(theme.ON_ACCENT if self.selected and not self.listening else theme.MUTED))
+            painter.setPen(QColor(theme.MUTED))
             painter.drawText(rect.adjusted(5, 3, -3, -3), Qt.AlignLeft | Qt.AlignTop, self.key.legend)
             font.setPixelSize(max(10, round(unit * 0.36)))
             font.setWeight(QFont.DemiBold)
@@ -150,13 +147,11 @@ class KeyboardGrid(QWidget):
         self.setMinimumWidth(math.ceil(UNIT * layout.WIDTH))
         self.setFixedHeight(math.ceil(UNIT * layout.HEIGHT))
 
-    def show_mappings(self, mappings: list[tuple[str, str]], selected: str | None,
-                      listening: bool) -> None:
+    def show_mappings(self, mappings: list[tuple[str, str]], listening_key: str | None) -> None:
         for cap in self._all:
             name = cap.key.name
             function = keymap.function_of(mappings, name) if name else None
-            cap.set_state(function, name is not None and name == selected,
-                          listening and name == selected)
+            cap.set_state(function, name is not None and name == listening_key)
 
     def resizeEvent(self, _event) -> None:
         unit = UNIT

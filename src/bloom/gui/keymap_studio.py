@@ -39,8 +39,7 @@ class KeymapStudio(QWidget):
         super().__init__()
         self.c = controller
         self.toast = toast
-        self._selected: str | None = None
-        self._capturing = False
+        self._listening_key: str | None = None
         self._listen_profile = ""
         self._unsupported_key = False
 
@@ -58,14 +57,13 @@ class KeymapStudio(QWidget):
         keyboard_layout.addWidget(self.grid)
         legend = QHBoxLayout()
         legend.setSpacing(18)
-        legend.addLayout(_swatch(theme.ACCENT, theme.ACCENT, "Selected"))
+        legend.addLayout(_swatch(theme.REMAPPED, theme.ACCENT, "Waiting for a key"))
         legend.addLayout(_swatch(theme.REMAPPED, theme.REMAPPED_BORDER, "Remapped"))
         legend.addLayout(_swatch(theme.KEY, theme.BORDER_STRONG, "Original"))
         legend.addStretch(1)
         keyboard_layout.addLayout(legend)
 
         self.panel = KeyPanel()
-        self.panel.remap_clicked.connect(self._start_listening)
         self.panel.cancel_clicked.connect(lambda: self._finish(None))
 
         self.remaps = RemapsList()
@@ -121,32 +119,29 @@ class KeymapStudio(QWidget):
         if key.name is None:
             QToolTip.showText(QCursor.pos(), FN_TOOLTIP, self)
             return
-        self._selected = key.name
-        self._start_listening()
-
-    def _start_listening(self) -> None:
-        if self._capturing or self._selected is None:
+        if self._listening_key is not None:
             return
-        self._capturing = True
+        self._listening_key = key.name
         self._unsupported_key = False
         self._listen_profile = self.c.config.active_profile
         self.c.start_listening()
-        self.listener.start(self.grid.caps[self._selected], self.panel.cancel_button)
+        self.listener.start(self.grid.caps[key.name], self.panel.cancel_button)
         self.refresh()
 
     def _finish(self, function: str | None) -> None:
         """The one way out of listening: with the captured function, or cancelled."""
-        if not self._capturing:
+        key = self._listening_key
+        if key is None:
             return
-        self._capturing = False
+        self._listening_key = None
         self.listener.stop()
-        current = keymap.function_of(self.c.profile.mappings, self._selected)
+        current = keymap.function_of(self.c.profile.mappings, key)
         if function is None or function == current:
             self.c.stop_listening()
             if function is not None:
-                self.toast.show_message(f"{key_title(self._selected)} already gives {function_text(function)}.")
+                self.toast.show_message(f"{key_title(key)} already gives {function_text(function)}.")
         else:
-            self._assign(self._selected, function)
+            self._assign(key, function)
         self.refresh()
 
     def _on_unsupported_key(self) -> None:
@@ -226,11 +221,11 @@ class KeymapStudio(QWidget):
     # ---- state -> widgets ------------------------------------------------------
 
     def refresh(self) -> None:
-        if self._capturing and self.c.config.active_profile != self._listen_profile:
+        if self._listening_key and self.c.config.active_profile != self._listen_profile:
             self._finish(None)
             return
         mappings = self.c.profile.mappings
-        self.grid.show_mappings(mappings, self._selected, self._capturing)
+        self.grid.show_mappings(mappings, self._listening_key)
         count = len(mappings)
         self.badge.setText(f"{count_text(count, 'key')} remapped")
         self.badge.setVisible(count > 0)
@@ -239,9 +234,9 @@ class KeymapStudio(QWidget):
         self._show_footer()
 
     def _show_panel(self) -> None:
-        current = (keymap.function_of(self.c.profile.mappings, self._selected)
-                   if self._selected else None)
-        self.panel.show_key(self._selected, current, self._capturing, self._unsupported_key)
+        key = self._listening_key
+        current = keymap.function_of(self.c.profile.mappings, key) if key else None
+        self.panel.show_key(key, current, self._unsupported_key)
 
     def _show_footer(self, *_args) -> None:
         if self.c.connected:

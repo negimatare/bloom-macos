@@ -12,6 +12,7 @@ from .controller import Controller
 from .widgets import StatusLine, ToggleSwitch, card, label, segmented, separator, text_block
 
 DEBOUNCE_MS = 150
+BRIGHTNESS_STEP = 5
 PRESETS = [("Night", 15), ("Soft", 35), ("Normal", 70), ("Maximum", 100)]
 EFFECTS = [LightEffect.STATIC, LightEffect.BREATHING]
 
@@ -42,6 +43,8 @@ class LightingStudio(QWidget):
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(0, 100)
+        self.slider.setSingleStep(BRIGHTNESS_STEP)
+        self.slider.setPageStep(BRIGHTNESS_STEP * 2)
         self.slider.setAccessibleName("Brightness")
         slider_row = QHBoxLayout()
         dim, bright = QLabel(), QLabel()
@@ -136,7 +139,11 @@ class LightingStudio(QWidget):
 
     def _show_footer(self, *_args) -> None:
         profile = self.c.config.active_profile
-        if self.c.connected:
+        if self.c.connected and self.c.lighting_blocked():
+            self.status.show_status(
+                f"Saved to profile {profile}, but macOS blocks the lighting: Input Monitoring is off.",
+                ok=False)
+        elif self.c.connected:
             self.status.show_status(f"Applied to the keyboard · profile {profile}", ok=True)
         else:
             self.status.show_status(
@@ -162,6 +169,10 @@ class LightingStudio(QWidget):
         self._commit_brightness()
 
     def _on_slider(self, value: int) -> None:
+        step = BRIGHTNESS_STEP * round(value / BRIGHTNESS_STEP)
+        if step != value:
+            self.slider.setValue(step)
+            return
         self._show_value(value)
         self._debounce.start()
 

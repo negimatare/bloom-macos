@@ -35,7 +35,7 @@ QFrame[role="card"] QWidget {{ background: transparent; }}
 QFrame[role="card"][active="true"] {{ border-color: {ACCENT}; background: #2B2330; }}
 QFrame[role="card"] QFrame[role="separator"] {{ background: {BORDER}; max-height: 1px; min-height: 1px; }}
 
-QLabel[role="wordmark"] {{ color: {ACCENT}; font-size: 16px; font-weight: 600; letter-spacing: 2px; }}
+QLabel[role="wordmark"] {{ color: {ACCENT}; font-size: 16px; font-weight: 600; letter-spacing: 1px; }}
 QLabel[role="title"] {{ font-size: 21px; font-weight: 600; }}
 QLabel[role="heading"] {{ font-size: 14px; font-weight: 600; }}
 QLabel[role="muted"] {{ color: {MUTED}; font-size: 12px; }}

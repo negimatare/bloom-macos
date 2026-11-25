@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -17,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import APP_NAME, ICON_PNG
 from . import icons, theme
 from .controller import Controller
 from .keymap_studio import KeymapStudio
@@ -24,9 +27,13 @@ from .lighting_studio import LightingStudio
 from .profile_studio import ProfileStudio
 from .widgets import Toast, label, segmented
 
-APP_NAME = "Bloom"
 SCREENS = [("Lighting", "sun"), ("Keymap", "keyboard"), ("Profiles", "layers")]
-START_SCREEN = 1
+START_SCREEN = 0
+INPUT_MONITORING_SETTINGS = "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent"
+PERMISSION_TEXT = (
+    "<b>macOS blocks the keyboard lighting</b><br>In Privacy &amp; Security → Input Monitoring, "
+    "switch on the app that opened Bloom (for example Terminal or Ghostty), then open Bloom again."
+)
 
 
 class MainWindow(QMainWindow):
@@ -53,7 +60,7 @@ class MainWindow(QMainWindow):
         bar = QHBoxLayout(topbar)
         bar.setContentsMargins(16, 10, 16, 10)
         bar.addWidget(logo)
-        bar.addWidget(label("bloom", "wordmark"))
+        bar.addWidget(label(APP_NAME, "wordmark"))
         bar.addSpacing(18)
         bar.addLayout(nav)
         bar.addStretch(1)
@@ -84,8 +91,16 @@ class MainWindow(QMainWindow):
         self.c.config_changed.connect(self._show_profiles)
         self.c.message.connect(self.toast.show_message)
         self.c.error.connect(lambda text: self.toast.show_message(text, "error"))
+        self.c.permission_needed.connect(self._ask_permission)
         self._show_connection(self.c.connected)
         self._show_profiles()
+
+    def _ask_permission(self) -> None:
+        self.toast.show_message(PERMISSION_TEXT, "error", [("Open Settings", self._open_settings)])
+
+    @staticmethod
+    def _open_settings() -> None:
+        subprocess.Popen(["/usr/bin/open", INPUT_MONITORING_SETTINGS])
 
     def _show_connection(self, connected: bool) -> None:
         self.dot.setStyleSheet(f"color: {theme.SUCCESS if connected else theme.MUTED};")
@@ -102,7 +117,7 @@ class MainWindow(QMainWindow):
 def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
-    app.setWindowIcon(icons.icon("flower", theme.ACCENT))
+    app.setWindowIcon(QIcon(str(ICON_PNG)))
     theme.apply(app)
     window = MainWindow()
     window.show()

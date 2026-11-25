@@ -19,6 +19,7 @@ class Controller(QObject):
     config_changed = Signal()
     message = Signal(str)
     error = Signal(str)
+    permission_needed = Signal()  # macOS blocks the keyboard: Input Monitoring is off
 
     def __init__(self) -> None:
         super().__init__()
@@ -41,6 +42,11 @@ class Controller(QObject):
     @property
     def connected(self) -> bool:
         return bool(self._paths)
+
+    @staticmethod
+    def lighting_blocked() -> bool:
+        """True when macOS denies Input Monitoring, so lighting commands cannot reach the keyboard."""
+        return device.input_monitoring_status() == "denied"
 
     def _poll(self) -> None:
         paths = frozenset(i.path for i in device.list_interfaces())
@@ -65,7 +71,10 @@ class Controller(QObject):
             action()
         except (device.DeviceError, keymap.KeymapError, KeyError, ValueError, RuntimeError, OSError) as exc:
             self._control_path = None  # re-probe next time
-            self.error.emit(str(exc))
+            if isinstance(exc, device.DeviceError) and self.lighting_blocked():
+                self.permission_needed.emit()
+            else:
+                self.error.emit(str(exc))
             return False
         if success:
             self.message.emit(success)

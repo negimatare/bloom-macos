@@ -19,7 +19,7 @@ class RemapsList(QFrame):
         self.toggle = QPushButton("Active remaps")
         self.toggle.setProperty("role", "flat-heading")
         self.toggle.setCheckable(True)
-        self.toggle.setChecked(True)
+        self.toggle.setChecked(False)
         self.toggle.setIconSize(QSize(14, 14))
         self.toggle.toggled.connect(self._show_open)
         self.count = label(role="muted")
