@@ -1,0 +1,32 @@
+name: Bug report
+description: Bloom did the wrong thing with the lighting, a remap, a profile or the helper.
+labels: [bug]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: The Bloom release or commit (`git describe --tags`), and your macOS version.
+      placeholder: Bloom 0.x.y, macOS 27.2
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The steps, for example "In Keymap, I clicked Caps Lock and pressed Escape".
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: The message that Bloom showed. For the background helper, add the lines of `~/Library/Logs/Bloom/watch.log` from that time.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
