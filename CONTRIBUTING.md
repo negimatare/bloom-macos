@@ -17,11 +17,11 @@ check on a real Razer BlackWidow Lite.
 
 ## Layout
 
-- `src/bloom/`: the core. Lighting and HID (`device.py`, `lighting.py`,
+- `bloom/`: the core. Lighting and HID (`device.py`, `lighting.py`,
   `protocol.py`), key mappings (`keymap.py`, `hid_usages.py`), profiles
   (`config.py`), the background helper (`watcher.py`), the app bundles
   (`bundle.py`, `launcher.py`) and the CLI (`cli.py`).
-- `src/bloom/gui/`: the PySide6 window. `controller.py` holds the state and
+- `bloom/gui/`: the PySide6 window. `controller.py` holds the state and
   the actions; the other modules are screens and widgets.
 - `scripts/`: the icon script and the release notes script.
 
