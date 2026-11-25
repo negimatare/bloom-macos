@@ -1,6 +1,6 @@
 """Draw the Bloom app icon (the Lucide flower on a dark rounded square).
 
-Writes src/bloom/assets/bloom.png and, with macOS's iconutil, bloom.icns:
+Writes bloom/assets/bloom.png and, with macOS's iconutil, bloom.icns:
     uv run python scripts/make_icon.py
 """
 
@@ -14,7 +14,7 @@ from PySide6.QtGui import QColor, QGuiApplication, QImage, QLinearGradient, QPai
 
 from bloom.gui import icons, theme
 
-ASSETS = Path(__file__).resolve().parents[1] / "src" / "bloom" / "assets"
+ASSETS = Path(__file__).resolve().parents[1] / "bloom" / "assets"
 SIZE = 1024
 BODY = 824  # Apple's icon grid: the shape fills 824 of 1024 pixels
 RADIUS = 185
