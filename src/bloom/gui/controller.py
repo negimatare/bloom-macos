@@ -15,7 +15,8 @@ POLL_MS = 2000
 class Controller(QObject):
     connection_changed = Signal(bool)
     config_changed = Signal()
-    message = Signal(str)  # status-bar text
+    message = Signal(str)
+    error = Signal(str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -56,7 +57,7 @@ class Controller(QObject):
             action()
         except (device.DeviceError, keymap.KeymapError, KeyError, ValueError, RuntimeError) as exc:
             self._control_path = None  # re-probe next time
-            self.message.emit(f"Error: {exc}")
+            self.error.emit(str(exc))
             return False
         if success:
             self.message.emit(success)
@@ -82,7 +83,6 @@ class Controller(QObject):
         self.profile.lighting.effect = effect.value
         self.save()
         if not self.connected:
-            self.message.emit("Saved. The keyboard isn't connected.")
             return
 
         def action(kb):
@@ -90,17 +90,14 @@ class Controller(QObject):
             if effect is not LightEffect.OFF:
                 lighting.set_brightness(kb, self.profile.lighting.brightness)
 
-        names = {LightEffect.OFF: "Backlight off", LightEffect.STATIC: "Static",
-                 LightEffect.BREATHING: "Breathing"}
-        self._run(lambda: self._with_keyboard(action), f"{names[effect]} applied")
+        self._run(lambda: self._with_keyboard(action), "")
 
     def set_brightness(self, percent: int) -> None:
         self.profile.lighting.brightness = percent
         self.save()
         if self.connected and self.profile.lighting.effect != LightEffect.OFF.value:
             self._run(
-                lambda: self._with_keyboard(lambda kb: lighting.set_brightness(kb, percent)),
-                f"Brightness {percent}%",
+                lambda: self._with_keyboard(lambda kb: lighting.set_brightness(kb, percent)), ""
             )
 
     # ---- key mappings -------------------------------------------------------
@@ -109,7 +106,7 @@ class Controller(QObject):
         try:
             mappings = keymap.normalise(mappings)
         except (keymap.KeymapError, KeyError) as exc:
-            self.message.emit(f"Error: {exc}")
+            self.error.emit(str(exc))
             return False
         self.profile.mappings = mappings
         self.save()
@@ -171,7 +168,7 @@ class Controller(QObject):
         try:
             name = self._check_name(name)
         except ValueError as exc:
-            self.message.emit(f"Error: {exc}")
+            self.error.emit(str(exc))
             return False
         source = self.config.profiles.get(copy_of) if copy_of else None
         self.config.profiles[name] = (
@@ -185,7 +182,7 @@ class Controller(QObject):
         try:
             new = self._check_name(new)
         except ValueError as exc:
-            self.message.emit(f"Error: {exc}")
+            self.error.emit(str(exc))
             return False
         # Rebuild to keep the order of profiles.
         self.config.profiles = {
@@ -199,7 +196,7 @@ class Controller(QObject):
 
     def delete_profile(self, name: str) -> bool:
         if len(self.config.profiles) <= 1:
-            self.message.emit("Error: you need at least one profile")
+            self.error.emit("You need at least one profile")
             return False
         was_active = name == self.config.active_profile
         del self.config.profiles[name]
