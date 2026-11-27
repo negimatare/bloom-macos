@@ -12,6 +12,16 @@ Run from the repository root before you call a change done:
 uv run pytest
 ```
 
+## Runtime check
+
+Opens the window with a fake keyboard and a sample config, and saves a
+screenshot of each screen and a log to `$OUT`. Nothing reaches USB,
+`hidutil` or your own config.
+
+```bash
+uv run python scripts/drive.py --out "$OUT"   # add --screen Keymap for one screen
+```
+
 ## Project-specific rules
 
 - `mochitsuki` is the integration branch. When a mochi skill says "the

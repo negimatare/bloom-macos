@@ -12,6 +12,8 @@ uv run pytest         # the tests
 ```
 
 The tests use fakes for the keyboard and `hidutil`, so they need no keyboard.
+`uv run python scripts/drive.py --out <folder>` uses the same fakes to save
+a screenshot of each screen, for example for a pull request.
 A change to the keyboard, `hidutil` or the background helper also needs a
 check on a real Razer BlackWidow Lite.
 
@@ -23,7 +25,9 @@ check on a real Razer BlackWidow Lite.
   (`bundle.py`, `launcher.py`) and the CLI (`cli.py`).
 - `bloom/gui/`: the PySide6 window. `controller.py` holds the state and
   the actions; the other modules are screens and widgets.
-- `scripts/`: the icon script and the release notes script.
+- `scripts/`: the icon script, the release notes script, and `drive.py`,
+  which opens the window with a fake keyboard and saves each screen (the
+  runtime check of `CLAUDE.md`).
 
 ## Branches
 
