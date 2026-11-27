@@ -14,9 +14,9 @@ uv run pytest
 
 ## Project-specific rules
 
-- `mochitsuki` is the integration branch. When a mochi skill says "the
-  default branch", it means `mochitsuki` here: branch off it, and open each
-  pull request against it (`/mochi:pr mochitsuki`).
+- Integration branch: `mochitsuki`. The mochi skills read this line: they
+  branch off `mochitsuki` and open each pull request against it. `main`
+  gets only releases and hotfixes.
 - Use the project-local `.venv` through `uv` only. Install nothing
   system-wide, and no tool such as Karabiner.
 - Text in the app is in UK English.
